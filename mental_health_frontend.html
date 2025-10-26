@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Health Support Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #333;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            width: 95vw;
+            height: 90vh;
+            max-width: 1400px;
+        }
+
+        .chat-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chat-header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .chat-header h1 {
+            font-size: 1.2rem;
+            color: #444;
+        }
+        
+        .connection-status {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .connection-status.connected {
+            background-color: #4CAF50;
+        }
+
+        .connection-status.disconnected {
+            background-color: #F44336;
+        }
+
+        .messages {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 18px;
+            border-radius: 20px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .user-message {
+            background-color: #764ba2;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+
+        .bot-message {
+            background-color: #e0e0e0;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+
+        .crisis-message {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 5px;
+            padding: 10px 18px;
+            color: #888;
+            font-style: italic;
+        }
+
+        .typing-dots span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #888;
+            border-radius: 50%;
+            animation: bounce 1s infinite;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-8px); }
+        }
+
+        .input-section {
+            display: flex;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #ddd;
+        }
+
+        .input-container {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        
+        #messageInput {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ccc;
+            border-radius: 25px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        #messageInput:focus {
+            border-color: #667eea;
+        }
+
+        .send-button {
+            background-color: #667eea;
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .send-button:hover {
+            background-color: #5668e0;
+        }
+
+        .send-button:active {
+            transform: scale(0.95);
+        }
+
+        .insights-panel {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            position: relative;
+        }
+
+        .insights-panel h2 {
+            font-size: 1.5rem;
+            color: #333;
+        }
+
+        .mood-display {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .mood-emoji {
+            font-size: 4rem;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+
+        .mood-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #555;
+            text-transform: capitalize;
+        }
+
+        .risk-indicator {
+            text-align: center;
+            padding: 8px;
+            border-radius: 15px;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        
+        .risk-low { background-color: #4CAF50; }
+        .risk-moderate { background-color: #FFC107; }
+        .risk-high { background-color: #F44336; }
+
+        .emotional-balance {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .emotion-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .emotion-count {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .emotion-count.positive { color: #4CAF50; }
+        .emotion-count.neutral { color: #888; }
+        .emotion-count.negative { color: #F44336; }
+
+        .suggestions {
+            margin-top: 20px;
+        }
+
+        .suggestions h4 {
+            font-size: 1.1rem;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .suggestions ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .suggestions li {
+            background: #f0f0f0;
+            padding: 8px 12px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            color: #444;
+        }
+
+        .stats {
+            font-size: 0.8rem;
+            color: #999;
+            text-align: center;
+            margin-top: auto;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="chat-section">
+            <div class="chat-header">
+                <h1>Mental Health Chatbot</h1>
+                <span class="connection-status disconnected" id="connectionStatus">Connecting...</span>
+            </div>
+            
+            <div class="messages" id="messagesContainer">
+                <div class="message bot-message">Hello! I'm here to listen. What's on your mind today?</div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <span>AI is thinking</span>
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+            
+            <div class="input-section">
+                <div class="input-container">
+                    <input 
+                        type="text" 
+                        id="messageInput" 
+                        placeholder="Share what's on your mind..."
+                        autocomplete="off"
+                        maxlength="500"
+                    >
+                </div>
+                <button class="send-button" id="sendButton">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m22 2-7 20-4-9-9-4z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="insights-panel">
+            <h2>Mood Insights</h2>
+            
+            <div class="mood-display">
+                <div class="mood-emoji" id="moodEmoji">😐</div>
+                <div class="mood-text" id="moodText">Neutral</div>
+            </div>
+
+            <div class="risk-indicator risk-low" id="riskIndicator">
+                <strong>Risk Level:</strong> <span id="riskText">low</span>
+            </div>
+            
+            <div class="emotional-balance">
+                <div class="emotion-stat">
+                    <span class="emotion-count positive" id="positiveCount">0</span>
+                    Positive
+                </div>
+                <div class="emotion-stat">
+                    <span class="emotion-count neutral" id="neutralCount">0</span>
+                    Neutral
+                </div>
+                <div class="emotion-stat">
+                    <span class="emotion-count negative" id="negativeCount">0</span>
+                    Negative
+                </div>
+            </div>
+            
+            <div class="suggestions">
+                <h4>Suggestions</h4>
+                <ul id="suggestionsList">
+                    <li>How you're feeling is valid and important.</li>
+                </ul>
+            </div>
+            
+            <div class="stats">
+                Session started: <span id="sessionDuration">00:00:00</span>
+            </div>
+        </div>
+    </div>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const moodEmoji = document.getElementById('moodEmoji');
+        const moodText = document.getElementById('moodText');
+        const riskIndicator = document.getElementById('riskIndicator');
+        const riskText = document.getElementById('riskText');
+        const positiveCount = document.getElementById('positiveCount');
+        const neutralCount = document.getElementById('neutralCount');
+        const negativeCount = document.getElementById('negativeCount');
+        const suggestionsList = document.getElementById('suggestionsList');
+        const connectionStatus = document.getElementById('connectionStatus');
+
+        let isTyping = false;
+        const sessionId = Date.now().toString(); // Simple session ID for demonstration
+        let sessionStartTime = new Date();
+
+        // Update session duration
+        setInterval(() => {
+            const now = new Date();
+            const diff = Math.floor((now - sessionStartTime) / 1000);
+            const hours = Math.floor(diff / 3600);
+            const minutes = Math.floor((diff % 3600) / 60);
+            const seconds = diff % 60;
+            document.getElementById('sessionDuration').textContent = 
+                `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }, 1000);
+
+        // Function to create a message element
+        const createMessageElement = (text, type, isCrisis = false) => {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', type);
+            if (isCrisis) {
+                messageElement.classList.add('crisis-message');
+            }
+            messageElement.textContent = text;
+            return messageElement;
+        };
+
+        // Function to scroll to the bottom of the messages
+        const scrollToBottom = () => {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        };
+
+        // Function to send a message to the backend
+        const sendMessage = async () => {
+            const userMessage = messageInput.value.trim();
+            if (!userMessage || isTyping) return;
+
+            // Add user message to UI
+            messagesContainer.appendChild(createMessageElement(userMessage, 'user-message'));
+            messageInput.value = '';
+            scrollToBottom();
+
+            // Show typing indicator
+            typingIndicator.style.display = 'flex';
+            isTyping = true;
+            scrollToBottom();
+
+            try {
+                const response = await fetch('http://localhost:5000/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: userMessage, session_id: sessionId }),
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update UI with bot response
+                    setTimeout(() => {
+                        messagesContainer.appendChild(createMessageElement(
+                            data.data.bot_response,
+                            'bot-message',
+                            data.data.urgent_intervention_needed
+                        ));
+                        scrollToBottom();
+                        updateInsights(data.data.mood_insights);
+                    }, 500); // Simulate AI thinking time
+                } else {
+                    console.error('API Error:', data.error);
+                    messagesContainer.appendChild(createMessageElement(data.error, 'bot-message'));
+                    scrollToBottom();
+                }
+            } catch (error) {
+                console.error('Fetch Error:', error);
+                messagesContainer.appendChild(createMessageElement("Oops! I couldn't connect to the server. Please check the backend.", 'bot-message'));
+                scrollToBottom();
+            } finally {
+                // Hide typing indicator
+                isTyping = false;
+                typingIndicator.style.display = 'none';
+                scrollToBottom();
+            }
+        };
+
+        // Function to update the mood insights panel
+        const updateInsights = (insights) => {
+            // Update mood
+            const moodMap = {
+                'positive': '😄',
+                'neutral': '😐',
+                'depression': '😔',
+                'anxiety': '😟',
+                'anger': '😡',
+                'self_harm': '🚨'
+            };
+            moodEmoji.textContent = moodMap[insights.current_mood] || '😐';
+            moodText.textContent = insights.current_mood;
+
+            // Update risk indicator
+            riskIndicator.className = 'risk-indicator';
+            riskIndicator.classList.add(`risk-${insights.risk_level}`);
+            riskText.textContent = insights.risk_level;
+
+            // Update emotional balance
+            positiveCount.textContent = insights.emotional_balance.positive;
+            neutralCount.textContent = insights.emotional_balance.neutral;
+            negativeCount.textContent = insights.emotional_balance.negative;
+
+            // Update suggestions
+            suggestionsList.innerHTML = '';
+            insights.suggestions.forEach(suggestion => {
+                const li = document.createElement('li');
+                li.textContent = suggestion;
+                suggestionsList.appendChild(li);
+            });
+        };
+
+        // Event Listeners
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Connection status check
+        const checkConnection = async () => {
+            try {
+                const response = await fetch('http://localhost:5000/health');
+                if (response.ok) {
+                    connectionStatus.textContent = 'Connected';
+                    connectionStatus.classList.remove('disconnected');
+                    connectionStatus.classList.add('connected');
+                } else {
+                    throw new Error('Server not healthy');
+                }
+            } catch (error) {
+                connectionStatus.textContent = 'Disconnected';
+                connectionStatus.classList.remove('connected');
+                connectionStatus.classList.add('disconnected');
+            }
+        };
+
+        // Check connection on page load and every 5 seconds
+        checkConnection();
+        setInterval(checkConnection, 5000);
+    });
+</script>
+</body>
+</html>
